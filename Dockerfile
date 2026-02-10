@@ -28,6 +28,9 @@ RUN ln -s /pmbootstrap/pmbootstrap.py /usr/local/bin/pmbootstrap
 RUN mkdir -p /home/pmuser/.local/var/pmbootstrap \
     && chown -R pmuser:pmuser /home/pmuser/.local
 
+# Fix permissions for the pmbootstrap directory
+RUN chown -R pmuser:pmuser /pmbootstrap
+
 # Switch to the non-root user
 USER pmuser
 
