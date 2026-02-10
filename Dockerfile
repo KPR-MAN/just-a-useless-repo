@@ -31,6 +31,11 @@ RUN mkdir -p /home/pmuser/.local/var/pmbootstrap \
 # Fix permissions for the pmbootstrap directory
 RUN chown -R pmuser:pmuser /pmbootstrap
 
+# Create the config directory and pre-configure pmbootstrap
+RUN mkdir -p /home/pmuser/.config && \
+    echo "[pmbootstrap]" > /home/pmuser/.config/pmbootstrap.cfg && \
+    echo "work = /home/pmuser/.local/var/pmbootstrap" >> /home/pmuser/.config/pmbootstrap.cfg
+
 # Switch to the non-root user
 USER pmuser
 
