@@ -1,0 +1,31 @@
+name: Build postmarketOS for Samsung Goyawifi (Manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: postmarketos/pmbootstrap:latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize pmbootstrap
+        run: |
+          pmbootstrap init
+          echo "y" | pmbootstrap config device samsung-goyawifi
+
+      - name: Install dependencies
+        run: pmbootstrap zap
+
+      - name: Build and export
+        run: |
+          pmbootstrap install --android-recovery-zip --recovery-install-partition=data
+          pmbootstrap export
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pmos-samsung-goyawifi
+          path: /tmp/postmarketOS-export/pmos-samsung-goyawifi.zip
