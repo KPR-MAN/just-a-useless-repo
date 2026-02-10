@@ -9,7 +9,10 @@ RUN apt-get update \
        python3-pip \
        python3-tomli \
        kpartx \
-       sudo
+       sudo \
+       lsb-release \
+       qemu-user-static \
+       binfmt-support
 
 # Create a non-root user
 RUN useradd -ms /bin/bash pmuser
@@ -18,7 +21,7 @@ RUN useradd -ms /bin/bash pmuser
 RUN echo "pmuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/pmuser
 
 # Clone pmbootstrap from Git
-RUN git clone --depth=1 https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git
+RUN git clone --depth=1 https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git /pmbootstrap
 
 # Create the bin directory
 RUN mkdir -p /home/pmuser/.local/bin
@@ -28,7 +31,7 @@ RUN mkdir -p /home/pmuser/.local/var/pmbootstrap \
     && chown -R pmuser:pmuser /home/pmuser/.local
 
 # Create a symbolic link to pmbootstrap.py
-RUN ln -s /pmbootstrap/pmbootstrap.py /home/pmuser/.local/bin/pmbootstrap
+RUN ln -s /pmbootstrap/pmbootstrap.py /usr/local/bin/pmbootstrap
 
 # Add /home/pmuser/.local/bin to the PATH for the non-root user
 ENV PATH="/home/pmuser/.local/bin:$PATH"
@@ -38,6 +41,3 @@ USER pmuser
 
 # Set the working directory
 WORKDIR /pmbootstrap
-
-# Set the entry point to /bin/bash
-ENTRYPOINT ["/bin/bash"]
