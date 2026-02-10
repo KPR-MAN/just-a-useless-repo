@@ -25,7 +25,7 @@ jobs:
           pmbootstrap export
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pmos-samsung-goyawifi
           path: /tmp/postmarketOS-export/pmos-samsung-goyawifi.zip
