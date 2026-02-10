@@ -21,13 +21,14 @@ jobs:
           docker run --rm \
             -v $(pwd)/pmos-export:/tmp/postmarketOS-export \
             -v $(pwd)/pmos-config:/home/pmuser/.local/var/pmbootstrap \
+            -e HOME=/home/pmuser \
             pmbootstrap-custom \
             bash -c "
-            pmbootstrap init && \
-            echo 'y' | pmbootstrap config device samsung-goyawifi && \
-            pmbootstrap zap && \
-            pmbootstrap install --android-recovery-zip --recovery-install-partition=data && \
-            pmbootstrap export
+            pmbootstrap --details-to-stdout init && \
+            echo 'y' | pmbootstrap --details-to-stdout config device samsung-goyawifi && \
+            pmbootstrap --details-to-stdout zap && \
+            pmbootstrap --details-to-stdout install --android-recovery-zip --recovery-install-partition=data && \
+            pmbootstrap --details-to-stdout export
             "
 
       - name: Upload artifact
