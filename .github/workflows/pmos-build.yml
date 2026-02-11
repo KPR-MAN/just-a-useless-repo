@@ -73,11 +73,16 @@ jobs:
           echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
           echo "Building with packages: $PACKAGES"
       
-      - name: Build missing packages
+      - name: Build all required packages
         run: |
-          # Build the device package and dependencies
+          # Build all packages marked as needed for this device
+          # These are the ones shown as "marked for build" in the log
+          pmbootstrap build dhclient
           pmbootstrap build device-samsung-goyawifi
           pmbootstrap build linux-samsung-goyawifi
+          pmbootstrap build firmware-samsung-goyawifi
+          pmbootstrap build postmarketos-base
+          pmbootstrap build postmarketos-ui-lxqt
       
       - name: Install base system
         run: |
