@@ -42,7 +42,10 @@ jobs:
       
       - name: Initialize pmbootstrap
         run: |
-          # Configure pmbootstrap non-interactively using config commands
+          # Run init with -y flag to accept all defaults non-interactively
+          pmbootstrap -y init
+          
+          # Now configure our specific settings
           pmbootstrap config device samsung-goyawifi
           pmbootstrap config ui lxqt
           pmbootstrap config kernel downstream
@@ -50,8 +53,7 @@ jobs:
           pmbootstrap config work "$HOME/work"
           pmbootstrap config jobs $(nproc)
           
-          # Pull pmaports and switch to edge branch
-          pmbootstrap pull
+          # Switch pmaports to edge branch
           cd ~/.local/var/pmbootstrap/cache_git/pmaports
           git checkout edge
           git pull origin edge
@@ -138,7 +140,7 @@ jobs:
           
           Default credentials:
           Username: user
-          Password: 147147
+          Password: user
           
           Note: You may need to change the password on first boot.
           EOF
