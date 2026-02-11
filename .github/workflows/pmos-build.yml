@@ -56,8 +56,8 @@ jobs:
           
           # Switch pmaports to edge branch
           cd ~/.local/var/pmbootstrap/cache_git/pmaports
+          git fetch origin edge
           git checkout edge
-          git pull origin edge
       
       - name: Build packages list
         id: packages
