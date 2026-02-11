@@ -42,8 +42,10 @@ jobs:
       
       - name: Initialize pmbootstrap
         run: |
-          # Run init with -y flag to accept all defaults non-interactively
-          pmbootstrap -y init
+          # Run init with empty string piped to it (CI method)
+          set +o pipefail
+          yes '' | pmbootstrap init
+          set -o pipefail
           
           # Now configure our specific settings
           pmbootstrap config device samsung-goyawifi
@@ -140,7 +142,7 @@ jobs:
           
           Default credentials:
           Username: user
-          Password: user
+          Password: 147147
           
           Note: You may need to change the password on first boot.
           EOF
