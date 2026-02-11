@@ -1,37 +1,182 @@
-name: Build postmarketOS for Samsung Goyawifi (Manual)
+name: Build PostmarketOS for Samsung Goyawifi
 
 on:
   workflow_dispatch:
+    inputs:
+      include_firefox:
+        description: 'Include Firefox'
+        required: false
+        type: boolean
+        default: true
+      extra_packages:
+        description: 'Extra packages to include (space-separated)'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
+      - name: Maximize build space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h
+      
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Create export directory
-        run: mkdir -p pmos-export
-
-      - name: Build custom Docker image
-        run: docker build -t pmbootstrap-custom .
-
-      - name: Run pmbootstrap in Docker
+      
+      - name: Install dependencies
         run: |
-          docker run --rm \
-            -v $(pwd)/pmos-export:/tmp/postmarketOS-export \
-            -v $(pwd)/pmos-config:/home/pmuser/.local/var/pmbootstrap \
-            -e HOME=/home/pmuser \
-            pmbootstrap-custom \
-            bash -c "
-            pmbootstrap --details-to-stdout zap && \
-            pmbootstrap --details-to-stdout config device samsung-goyawifi && \
-            pmbootstrap --details-to-stdout install --android-recovery-zip --recovery-install-partition=data && \
-            pmbootstrap --details-to-stdout export
-            "
-
-      - name: Upload artifact
+          sudo apt-get update
+          sudo apt-get install -y \
+            git \
+            python3 \
+            python3-pip \
+            openssl \
+            btrfs-progs \
+            e2fsprogs \
+            android-tools-mkbootimg
+          
+          # Install pmbootstrap
+          pip3 install --user pmbootstrap
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      
+      - name: Initialize pmbootstrap
+        run: |
+          # Create config directory
+          mkdir -p ~/.config
+          
+          # Initialize pmbootstrap with our settings
+          yes '' | pmbootstrap init || true
+          
+          # Configure pmbootstrap
+          pmbootstrap config device samsung-goyawifi
+          pmbootstrap config ui lxqt
+          pmbootstrap config kernel downstream
+          pmbootstrap config extra_packages "none"
+          pmbootstrap config timezone UTC
+          pmbootstrap config mirrors "https://mirror.postmarketos.org/postmarketos/"
+          
+          # Set work directory
+          pmbootstrap config work "$HOME/.local/var/pmbootstrap"
+      
+      - name: Update pmaports to edge
+        run: |
+          cd ~/.local/var/pmbootstrap/cache_git/pmaports
+          git fetch origin
+          git checkout edge
+          git pull origin edge
+      
+      - name: Build packages list
+        id: packages
+        run: |
+          PACKAGES="firefox-esr"
+          
+          if [ "${{ github.event.inputs.include_firefox }}" = "true" ]; then
+            echo "Including Firefox ESR"
+          else
+            PACKAGES=""
+          fi
+          
+          if [ -n "${{ github.event.inputs.extra_packages }}" ]; then
+            PACKAGES="$PACKAGES ${{ github.event.inputs.extra_packages }}"
+          fi
+          
+          echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
+          echo "Building with packages: $PACKAGES"
+      
+      - name: Install packages to rootfs
+        if: steps.packages.outputs.packages != ''
+        run: |
+          pmbootstrap install --add ${{ steps.packages.outputs.packages }}
+      
+      - name: Build recovery zip
+        run: |
+          # Install base system first if not done
+          pmbootstrap install
+          
+          # Export recovery zip
+          pmbootstrap export --flavor android-recovery-zip
+      
+      - name: Get build artifacts
+        id: artifacts
+        run: |
+          # Find the generated zip file
+          WORK_DIR="$HOME/.local/var/pmbootstrap"
+          ZIP_FILE=$(find "$WORK_DIR" -name "*.zip" -type f | head -n 1)
+          
+          if [ -z "$ZIP_FILE" ]; then
+            echo "Error: No zip file found!"
+            exit 1
+          fi
+          
+          # Get file info
+          FILE_NAME=$(basename "$ZIP_FILE")
+          FILE_SIZE=$(du -h "$ZIP_FILE" | cut -f1)
+          
+          echo "zip_file=$ZIP_FILE" >> $GITHUB_OUTPUT
+          echo "file_name=$FILE_NAME" >> $GITHUB_OUTPUT
+          echo "file_size=$FILE_SIZE" >> $GITHUB_OUTPUT
+          
+          echo "Found: $FILE_NAME ($FILE_SIZE)"
+      
+      - name: Generate build info
+        run: |
+          cat > build-info.txt << EOF
+          PostmarketOS Build Information
+          ==============================
+          Device: Samsung Galaxy Tab 3 Lite (goyawifi)
+          Model: SM-T111/T110
+          Branch: edge
+          Desktop: LXQt
+          Kernel: downstream
+          Architecture: armv7
+          Build Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          Packages included:
+          ${{ steps.packages.outputs.packages }}
+          
+          Installation Instructions:
+          1. Boot into recovery mode (TWRP/CWM recommended)
+          2. Backup your current system
+          3. Flash the zip file
+          4. Wipe cache/dalvik
+          5. Reboot
+          
+          Default credentials:
+          Username: user
+          Password: 147147
+          
+          Note: You may need to change the password on first boot.
+          EOF
+          
+          cat build-info.txt
+      
+      - name: Upload recovery zip
         uses: actions/upload-artifact@v4
         with:
-          name: pmos-samsung-goyawifi
-          path: pmos-export/pmos-samsung-goyawifi.zip
+          name: postmarketos-samsung-goyawifi-lxqt
+          path: |
+            ${{ steps.artifacts.outputs.zip_file }}
+            build-info.txt
+          retention-days: 30
+      
+      - name: Build summary
+        run: |
+          echo "## ✅ Build Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Device:** Samsung Galaxy Tab 3 Lite (goyawifi)" >> $GITHUB_STEP_SUMMARY
+          echo "**File:** ${{ steps.artifacts.outputs.file_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Size:** ${{ steps.artifacts.outputs.file_size }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Installation" >> $GITHUB_STEP_SUMMARY
+          echo "1. Download the artifact from this workflow run" >> $GITHUB_STEP_SUMMARY
+          echo "2. Boot your device into recovery mode" >> $GITHUB_STEP_SUMMARY
+          echo "3. Flash the zip file" >> $GITHUB_STEP_SUMMARY
+          echo "4. Reboot and enjoy PostmarketOS!" >> $GITHUB_STEP_SUMMARY
