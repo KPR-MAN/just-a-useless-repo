@@ -74,16 +74,19 @@ jobs:
           echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
           echo "Building with packages: $PACKAGES"
       
-      - name: Install packages to rootfs
+      - name: Build and install base system
+        run: |
+          # Install base system with LXQt first
+          pmbootstrap install
+      
+      - name: Install extra packages
         if: steps.packages.outputs.packages != ''
         run: |
+          # Add extra packages to the already-installed rootfs
           pmbootstrap install --add ${{ steps.packages.outputs.packages }}
       
-      - name: Build and export recovery zip
+      - name: Export recovery zip
         run: |
-          # Install base system with LXQt
-          pmbootstrap install
-          
           # Export as android recovery flashable zip
           pmbootstrap export --flavor=android-recovery-zip
       
