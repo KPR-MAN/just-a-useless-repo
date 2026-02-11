@@ -29,39 +29,30 @@ jobs:
             git \
             python3 \
             python3-pip
+      
       - name: Install pmbootstrap
         run: |
-          # Clone pmbootstrap from GitLab
-          git clone --depth=1 https://gitlab.com/postmarketOS/pmbootstrap.git
-          cd pmbootstrap
+          # Clone pmbootstrap from the NEW GitLab location
+          git clone --depth=1 https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git
           
-          # Add pmbootstrap to PATH
-          echo "$GITHUB_WORKSPACE/pmbootstrap" >> $GITHUB_PATH
+          # Create symlink for easier access
+          mkdir -p ~/.local/bin
+          ln -s "$PWD/pmbootstrap/pmbootstrap.py" ~/.local/bin/pmbootstrap
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
       
       - name: Initialize pmbootstrap
         run: |
-          # Create config directory
-          mkdir -p ~/.config
+          # Configure pmbootstrap non-interactively using config commands
+          pmbootstrap config device samsung-goyawifi
+          pmbootstrap config ui lxqt
+          pmbootstrap config kernel downstream
+          pmbootstrap config extra_packages "none"
+          pmbootstrap config work "$HOME/work"
+          pmbootstrap config jobs $(nproc)
           
-          # Initialize pmbootstrap with our settings
-          cd pmbootstrap
-          yes '' | ./pmbootstrap.py init || true
-          
-          # Configure pmbootstrap
-          ./pmbootstrap.py config device samsung-goyawifi
-          ./pmbootstrap.py config ui lxqt
-          ./pmbootstrap.py config kernel downstream
-          ./pmbootstrap.py config extra_packages "none"
-          ./pmbootstrap.py config timezone UTC
-          ./pmbootstrap.py config mirrors "https://mirror.postmarketos.org/postmarketos/"
-          
-          # Set work directory
-          ./pmbootstrap.py config work "$HOME/.local/var/pmbootstrap"
-      
-      - name: Update pmaports to edge
-        run: |
+          # Pull pmaports and switch to edge branch
+          pmbootstrap pull
           cd ~/.local/var/pmbootstrap/cache_git/pmaports
-          git fetch origin
           git checkout edge
           git pull origin edge
       
@@ -86,18 +77,15 @@ jobs:
       - name: Install packages to rootfs
         if: steps.packages.outputs.packages != ''
         run: |
-          cd pmbootstrap
-          ./pmbootstrap.py install --add ${{ steps.packages.outputs.packages }}
+          pmbootstrap install --add ${{ steps.packages.outputs.packages }}
       
       - name: Build and export recovery zip
         run: |
-          cd pmbootstrap
-          
           # Install base system with LXQt
-          ./pmbootstrap.py install
+          pmbootstrap install
           
           # Export as android recovery flashable zip
-          ./pmbootstrap.py export --flavor=android-recovery-zip
+          pmbootstrap export --flavor=android-recovery-zip
       
       - name: Get build artifacts
         id: artifacts
