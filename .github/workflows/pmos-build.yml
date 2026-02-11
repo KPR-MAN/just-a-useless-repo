@@ -52,7 +52,6 @@ jobs:
           pmbootstrap config ui lxqt
           pmbootstrap config kernel downstream
           pmbootstrap config extra_packages "none"
-          pmbootstrap config work "$HOME/work"
           pmbootstrap config jobs $(nproc)
           
           # Switch pmaports to edge branch
