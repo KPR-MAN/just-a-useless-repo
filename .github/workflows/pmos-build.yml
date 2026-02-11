@@ -54,10 +54,7 @@ jobs:
           pmbootstrap config extra_packages "none"
           pmbootstrap config jobs $(nproc)
           
-          # Switch pmaports to edge branch
-          cd ~/.local/var/pmbootstrap/cache_git/pmaports
-          git fetch origin edge
-          git checkout edge
+          # Note: pmaports master branch = edge channel, no need to switch branches
       
       - name: Build packages list
         id: packages
