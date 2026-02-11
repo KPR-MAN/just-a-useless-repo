@@ -51,7 +51,6 @@ jobs:
           pmbootstrap config device samsung-goyawifi
           pmbootstrap config ui lxqt
           pmbootstrap config kernel downstream
-          pmbootstrap config extra_packages "none"
           pmbootstrap config jobs $(nproc)
           
           # Note: pmaports master branch = edge channel, no need to switch branches
@@ -77,7 +76,11 @@ jobs:
       - name: Build and install base system
         run: |
           # Install base system with LXQt first
-          pmbootstrap install
+          pmbootstrap install || {
+            echo "=== Installation failed, showing log ==="
+            tail -100 ~/.local/var/pmbootstrap/log.txt
+            exit 1
+          }
       
       - name: Install extra packages
         if: steps.packages.outputs.packages != ''
