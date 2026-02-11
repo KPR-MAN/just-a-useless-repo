@@ -73,10 +73,16 @@ jobs:
           echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
           echo "Building with packages: $PACKAGES"
       
-      - name: Build and install base system
+      - name: Build missing packages
         run: |
-          # Install base system with LXQt, building missing packages
-          pmbootstrap install --build-pkgs-on-install || {
+          # Build the device package and dependencies
+          pmbootstrap build device-samsung-goyawifi
+          pmbootstrap build linux-samsung-goyawifi
+      
+      - name: Install base system
+        run: |
+          # Install base system with LXQt
+          pmbootstrap install || {
             echo "=== Installation failed, showing log ==="
             tail -100 ~/.local/var/pmbootstrap/log.txt
             exit 1
