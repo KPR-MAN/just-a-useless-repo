@@ -31,8 +31,15 @@ jobs:
             python3-pip
       - name: Install pmbootstrap
         run: |
-          pip3 install --user pmbootstrap
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          # Clone pmbootstrap from GitLab
+          git clone --depth=1 https://gitlab.com/postmarketOS/pmbootstrap.git
+          cd pmbootstrap
+          
+          # Install dependencies
+          pip3 install --user -r requirements.txt
+          
+          # Add pmbootstrap to PATH
+          echo "$GITHUB_WORKSPACE/pmbootstrap" >> $GITHUB_PATH
       
       - name: Initialize pmbootstrap
         run: |
@@ -40,18 +47,19 @@ jobs:
           mkdir -p ~/.config
           
           # Initialize pmbootstrap with our settings
-          yes '' | pmbootstrap init || true
+          cd pmbootstrap
+          yes '' | ./pmbootstrap.py init || true
           
           # Configure pmbootstrap
-          pmbootstrap config device samsung-goyawifi
-          pmbootstrap config ui lxqt
-          pmbootstrap config kernel downstream
-          pmbootstrap config extra_packages "none"
-          pmbootstrap config timezone UTC
-          pmbootstrap config mirrors "https://mirror.postmarketos.org/postmarketos/"
+          ./pmbootstrap.py config device samsung-goyawifi
+          ./pmbootstrap.py config ui lxqt
+          ./pmbootstrap.py config kernel downstream
+          ./pmbootstrap.py config extra_packages "none"
+          ./pmbootstrap.py config timezone UTC
+          ./pmbootstrap.py config mirrors "https://mirror.postmarketos.org/postmarketos/"
           
           # Set work directory
-          pmbootstrap config work "$HOME/.local/var/pmbootstrap"
+          ./pmbootstrap.py config work "$HOME/.local/var/pmbootstrap"
       
       - name: Update pmaports to edge
         run: |
@@ -81,15 +89,18 @@ jobs:
       - name: Install packages to rootfs
         if: steps.packages.outputs.packages != ''
         run: |
-          pmbootstrap install --add ${{ steps.packages.outputs.packages }}
+          cd pmbootstrap
+          ./pmbootstrap.py install --add ${{ steps.packages.outputs.packages }}
       
       - name: Build and export recovery zip
         run: |
+          cd pmbootstrap
+          
           # Install base system with LXQt
-          pmbootstrap install
+          ./pmbootstrap.py install
           
           # Export as android recovery flashable zip
-          pmbootstrap export --flavor=android-recovery-zip
+          ./pmbootstrap.py export --flavor=android-recovery-zip
       
       - name: Get build artifacts
         id: artifacts
