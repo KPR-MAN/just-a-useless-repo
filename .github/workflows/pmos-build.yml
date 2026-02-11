@@ -35,9 +35,6 @@ jobs:
           git clone --depth=1 https://gitlab.com/postmarketOS/pmbootstrap.git
           cd pmbootstrap
           
-          # Install dependencies
-          pip3 install --user -r requirements.txt
-          
           # Add pmbootstrap to PATH
           echo "$GITHUB_WORKSPACE/pmbootstrap" >> $GITHUB_PATH
       
