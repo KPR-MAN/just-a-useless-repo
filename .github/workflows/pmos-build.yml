@@ -75,8 +75,8 @@ jobs:
       
       - name: Build and install base system
         run: |
-          # Install base system with LXQt first
-          pmbootstrap install || {
+          # Install base system with LXQt, building missing packages
+          pmbootstrap install --build-pkgs-on-install || {
             echo "=== Installation failed, showing log ==="
             tail -100 ~/.local/var/pmbootstrap/log.txt
             exit 1
